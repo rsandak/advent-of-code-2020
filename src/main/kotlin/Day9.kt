@@ -1,45 +1,40 @@
-fun findEncryptionWeakness(fileName: String, preambleLength: Int): Long {
+class Decrypter(fileName: String, private val preambleLength: Int) {
+    private val input = readFile(fileName)
 
-    val invalid = findInvalid(fileName, preambleLength)
-
-    val readFile = readFile(fileName)
-
-    return (2..preambleLength).asSequence().map { size ->
-        readFile
-            .windowed(size, 1)
-            .filter { it.sum() == invalid }
+    fun findInvalid(): Long {
+        return input
+            .filterIndexed { index, value -> index >= preambleLength && !isValid(value, index) }
+            .first()
     }
-        .filterNot { it.isEmpty() }
-        .flatten()
-        .map { it.minOrNull()!! + it.maxOrNull()!! }
-        .first()
-}
 
-fun findInvalid(fileName: String, preambleLength: Int): Long {
+    fun findEncryptionWeakness(): Long {
 
-    val input = readFile(fileName)
-    return input
-        .filterIndexed { index, it ->
-            index >= preambleLength && !anySumTo(
-                input.subList(index - preambleLength, index),
-                it
-            )
+        val invalid = findInvalid()
+
+        return (2..preambleLength).asSequence().map { size ->
+            input
+                .windowed(size, 1)
+                .filter { it.sum() == invalid }
         }
-        .first()
+            .filterNot { it.isEmpty() }
+            .flatten()
+            .map { it.minOrNull()!! + it.maxOrNull()!! }
+            .first()
+    }
+
+
+    private fun isValid(value: Long, index: Int): Boolean {
+
+        fun allCombinations(value: Long) =
+            input.subList(index - preambleLength, index)
+                .filterNot { it == value }
+                .map { Pair(value, it) }
+
+        return input.subList(index - preambleLength, index)
+            .flatMap(::allCombinations)
+            .any { it.first + it.second == value }
+    }
 }
-
-fun anySumTo(subList: List<Long>, value: Long): Boolean {
-
-    fun allCombinations(value: Long) =
-        subList
-            .filterNot { it == value }
-            .map { Pair(value, it) }
-
-    return subList
-        .flatMap(::allCombinations)
-        .any { it.first + it.second == value }
-}
-
 
 private fun readFile(file: String) = { }::class.java
     .getResourceAsStream(file)
